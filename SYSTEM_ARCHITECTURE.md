@@ -138,3 +138,52 @@ erDiagram
 ## 6. Security
 *   **Row Level Security (RLS)**: Enabled on all tables. Currently configured to allow authenticated access (service role) for the dashboard and migration script.
 *   **Environment Variables**: Sensitive keys (`SUPABASE_SERVICE_ROLE_KEY`) are stored in `.env.local` and never exposed to the client-side bundle.
+
+---
+
+## 7. Additional Diagrams
+
+### 7.1. Shipment State Lifecycle
+The status of a shipment transitions automatically based on date fields.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending
+    Pending --> Scheduled: ETD populated
+    Scheduled --> InTransit: ATD populated
+    InTransit --> Arrived: ATA populated
+    Arrived --> Delivered: Delivery Date populated
+    Delivered --> [*]
+    
+    Pending --> Delayed: Current Date > ETA
+    Delayed --> InTransit: ATD populated
+```
+
+### 7.2. Deployment Infrastructure
+```mermaid
+graph LR
+    subgraph Local_Dev [Local Environment]
+        Dev[Developer]
+        Code[VS Code]
+    end
+    
+    subgraph GitHub_Repo [GitHub]
+        Repo[Source Code]
+        Action[GitHub Actions (Future)]
+    end
+    
+    subgraph Vercel_Cloud [Vercel Cloud]
+        Build[Build System]
+        Edge[Edge Network]
+    end
+    
+    subgraph Supabase_Cloud [Supabase Cloud]
+        DB_Inst[PostgreSQL Instance]
+        Auth_Svc[Auth Service]
+    end
+
+    Dev -->|Push| Repo
+    Repo -->|Trigger| Build
+    Build -->|Deploy| Edge
+    Edge -->|Connect| DB_Inst
+```
