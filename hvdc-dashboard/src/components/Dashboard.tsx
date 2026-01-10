@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Package, TrendingUp, AlertTriangle, Scale, Container, CheckCircle, Clock } from 'lucide-react'
+import GlobalMap from './GlobalMap'
 
 interface DashboardStats {
     overview: {
@@ -95,6 +96,10 @@ export default function Dashboard() {
                     icon={<Scale className="w-6 h-6 text-purple-600" />}
                     color="bg-purple-50 border-purple-100"
                 />
+            </div>
+
+            <div className="mb-8">
+                <GlobalMap />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
