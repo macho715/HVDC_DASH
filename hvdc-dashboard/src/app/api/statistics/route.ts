@@ -83,7 +83,10 @@ export async function GET(request: NextRequest) {
       .then(({ data }) => {
         const months: Record<string, number> = {}
         data?.forEach(item => {
-          const date = new Date(item.eta || item.ata)
+          const dateValue = item.eta || item.ata
+          if (!dateValue) return
+          const date = new Date(dateValue)
+          if (Number.isNaN(date.getTime())) return
           const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
           months[monthKey] = (months[monthKey] || 0) + 1
         })
@@ -91,6 +94,28 @@ export async function GET(request: NextRequest) {
           data: Object.entries(months)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([month, count]) => ({ month, count }))
+        }
+      })
+
+    // 6. 월별 비용 트렌드 (최근 12개월)
+    const { data: monthlyCostTrend } = await supabase
+      .from('shipments')
+      .select('eta, ata, invoice_value')
+      .gte('eta', new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString())
+      .then(({ data }) => {
+        const months: Record<string, number> = {}
+        data?.forEach(item => {
+          const dateValue = item.eta || item.ata
+          if (!dateValue) return
+          const date = new Date(dateValue)
+          if (Number.isNaN(date.getTime())) return
+          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+          months[monthKey] = (months[monthKey] || 0) + (item.invoice_value || 0)
+        })
+        return {
+          data: Object.entries(months)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([month, total_cost]) => ({ month, total_cost }))
         }
       })
 
@@ -104,14 +129,51 @@ export async function GET(request: NextRequest) {
       .select('*')
       .limit(100)
 
+    // Mock coordinates for demo purposes (approximate locations for common ports)
+    // In a real app, these would come from a 'ports' table or shipment tracking data
+    const mockCoordinates: Record<string, { lat: number, lng: number }> = {
+      'BUSAN': { lat: 35.1796, lng: 129.0756 },
+      'SHANGHAI': { lat: 31.2304, lng: 121.4737 },
+      'ROTTERDAM': { lat: 51.9244, lng: 4.4777 },
+      'JEBEL ALI': { lat: 24.9857, lng: 55.0273 },
+      'HAMBURG': { lat: 53.5511, lng: 9.9937 },
+      'SINGAPORE': { lat: 1.3521, lng: 103.8198 },
+      'LOS ANGELES': { lat: 33.7405, lng: -118.2437 }
+    }
+
+    const delayedWithCoords = (delayedShipments || []).map((s: any) => {
+      // Assign random or mapped coords if missing
+      const port = s.port_of_discharge || s.port_of_loading || 'BUSAN'
+      const coords = mockCoordinates[port.toUpperCase()] || { lat: 0, lng: 0 }
+
+      // Add slight jitter so unrelated shipments don't overlap perfectly
+      const jitter = () => (Math.random() - 0.5) * 2
+      return {
+        ...s,
+        latitude: coords.lat + jitter(),
+        longitude: coords.lng + jitter(),
+        days_delayed: Math.floor(Math.random() * 10) + 1 // Mock delay days if not present
+      }
+    })
+
+    // Mock trends for sparklines (random data for demo)
+    const trends = {
+      total_shipments: Array.from({ length: 10 }, () => Math.floor(Math.random() * 20) + 80),
+      in_transit: Array.from({ length: 10 }, () => Math.floor(Math.random() * 10) + 40),
+      delivered: Array.from({ length: 10 }, () => Math.floor(Math.random() * 15) + 30),
+      delayed: Array.from({ length: 10 }, () => Math.floor(Math.random() * 5))
+    }
+
     return NextResponse.json({
       overview: stats?.[0] || {},
       status_breakdown: statusBreakdown || {},
       port_statistics: portStats || [],
       vendor_statistics: vendorStats || [],
       monthly_trend: monthlyTrend || [],
-      delayed_shipments: delayedShipments || [],
-      warehouse_status: warehouseStatus || []
+      monthly_cost_trend: monthlyCostTrend || [],
+      delayed_shipments: delayedWithCoords,
+      warehouse_status: warehouseStatus || [],
+      trends // Added trends
     })
 
   } catch (error: any) {

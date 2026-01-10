@@ -8,6 +8,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase'
 
+type PortCoordinates = {
+  lat: number
+  lng: number
+}
+
+const PORT_COORDINATES: Record<string, PortCoordinates> = {
+  'abu dhabi': { lat: 24.4539, lng: 54.3773 },
+  'jebel ali': { lat: 25.0223, lng: 55.0617 },
+  'damman': { lat: 26.4344, lng: 50.1033 },
+  'rotterdam': { lat: 51.9519, lng: 4.1423 },
+  'busan': { lat: 35.1028, lng: 129.0403 },
+  'ulsan': { lat: 35.5384, lng: 129.3114 },
+  'singapore': { lat: 1.2644, lng: 103.8200 },
+  'hamburg': { lat: 53.5461, lng: 9.9661 },
+  'houston': { lat: 29.7294, lng: -95.2652 }
+}
+
+const normalizePortName = (port?: string | null) => port?.trim().toLowerCase()
+
+const resolvePortCoordinates = (port?: string | null): PortCoordinates | null => {
+  const normalized = normalizePortName(port)
+  if (!normalized) return null
+  return PORT_COORDINATES[normalized] ?? null
+}
+
 /**
  * GET /api/shipments
  * 선적 정보 조회
@@ -85,8 +110,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const shipmentsWithCoordinates = (data ?? []).map((shipment: any) => {
+      const loading = resolvePortCoordinates(shipment.port_of_loading)
+      const discharge = resolvePortCoordinates(shipment.port_of_discharge)
+      return {
+        ...shipment,
+        loading_lat: loading?.lat ?? null,
+        loading_lng: loading?.lng ?? null,
+        discharge_lat: discharge?.lat ?? null,
+        discharge_lng: discharge?.lng ?? null
+      }
+    })
+
     return NextResponse.json({
-      data,
+      data: shipmentsWithCoordinates,
       pagination: {
         page,
         limit,

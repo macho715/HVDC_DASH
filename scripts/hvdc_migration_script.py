@@ -403,7 +403,7 @@ def main():
     
     # 엑셀 파일 경로
     # Use the local file provided by the user
-    EXCEL_FILE = r'C:\Users\minky\Downloads\HVDC DASH\hvdc-dashboard\HVDC STATUS_1.xlsx'
+    EXCEL_FILE = r'C:\Users\minky\Downloads\HVDC DASH\data\HVDC STATUS_1.xlsx'
     
     # 마이그레이터 생성
     migrator = HVDCDataMigrator(SUPABASE_URL, SUPABASE_KEY)

@@ -94,6 +94,17 @@ vercel env add SUPABASE_SERVICE_ROLE_KEY
 -- 4. 성공 메시지 확인
 ```
 
+### 4. Running the Development Server
+Due to port conflicts on standard ports, we use port **3005**.
+
+```bash
+cd hvdc-dashboard
+npx next dev -p 3005 --webpack
+```
+
+-   **Access**: http://localhost:3005
+-   **Note**: The `--webpack` flag is required if Turbopack config is missing.
+
 ### 방법 2: Supabase CLI
 
 ```bash

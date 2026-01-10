@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Search, Filter, ChevronDown, Package, Ship, MapPin, Calendar } from 'lucide-react'
 
 interface Shipment {
@@ -17,6 +18,7 @@ interface Shipment {
 }
 
 export default function MobileShipmentList() {
+  const router = useRouter()
   const [shipments, setShipments] = useState<Shipment[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -152,7 +154,7 @@ export default function MobileShipmentList() {
             <div
               key={`${shipment.id}-${index}`}
               className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden active:shadow-lg transition-shadow"
-              onClick={() => window.location.href = `/shipments/${shipment.id}`}
+              onClick={() => router.push(`/shipments/${shipment.id}`)}
             >
               {/* Status Badge */}
               <div className={`px-4 py-2 border-b ${getStatusColor(shipment.status)}`}>

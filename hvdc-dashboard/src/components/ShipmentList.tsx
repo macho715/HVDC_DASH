@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
 interface Shipment {
@@ -131,12 +132,12 @@ export default function ShipmentList() {
                                     </span>
                                 </td>
                                 <td className="border p-2 text-center">
-                                    <button
-                                        onClick={() => alert('Detail view not implemented yet')}
+                                    <Link
+                                        href={`/shipments/${shipment.id}`}
                                         className="text-blue-600 hover:underline"
                                     >
                                         View
-                                    </button>
+                                    </Link>
                                 </td>
                             </tr>
                         ))}
