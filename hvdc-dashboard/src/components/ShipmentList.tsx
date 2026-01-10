@@ -112,8 +112,8 @@ export default function ShipmentList() {
                         </tr>
                     </thead>
                     <tbody>
-                        {shipments.map((shipment) => (
-                            <tr key={shipment.id} className="hover:bg-gray-50">
+                        {shipments.map((shipment, index) => (
+                            <tr key={`${shipment.id}-${index}`} className="hover:bg-gray-50">
                                 <td className="border p-2">{shipment.sct_ship_no}</td>
                                 <td className="border p-2">{shipment.vendor}</td>
                                 <td className="border p-2">{shipment.vessel_name}</td>
@@ -123,9 +123,9 @@ export default function ShipmentList() {
                                 <td className="border p-2 text-center">{shipment.total_containers}</td>
                                 <td className="border p-2">
                                     <span className={`px-2 py-1 rounded text-sm ${shipment.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                                            shipment.status === 'in_transit' ? 'bg-blue-100 text-blue-800' :
-                                                shipment.status === 'arrived' ? 'bg-yellow-100 text-yellow-800' :
-                                                    'bg-gray-100 text-gray-800'
+                                        shipment.status === 'in_transit' ? 'bg-blue-100 text-blue-800' :
+                                            shipment.status === 'arrived' ? 'bg-yellow-100 text-yellow-800' :
+                                                'bg-gray-100 text-gray-800'
                                         }`}>
                                         {shipment.status}
                                     </span>

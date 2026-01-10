@@ -121,7 +121,7 @@ class HVDCDataMigrator:
             
             # 구매 정보
             'po_number': self.clean_text(row['PO No.']),
-            'vendor': self.clean_text(row['VENDOR']),
+            'vendor': self._normalize_vendor(row['VENDOR']),
             'category': self.clean_text(row['CATEGORY']),
             
             # 물품 설명
@@ -151,9 +151,9 @@ class HVDCDataMigrator:
             'bl_awb_no': self.clean_text(row['B/L No./\n AWB No.']),
             'vessel_name': self.clean_text(row['VESSEL NAME/\n FLIGHT No.']),
             'vessel_imo_no': self.clean_text(row['VESSEL IMO NO.']),
-            'shipping_line': self.clean_text(row['SHIPPING LINE']),
-            'forwarder': self.clean_text(row['FORWARDER']),
-            'ship_mode': self.clean_text(row['SHIP\n MODE']),
+            'shipping_line': self._normalize_vendor(row['SHIPPING LINE']), # Apply same cleaning as vendor
+            'forwarder': self._normalize_vendor(row['FORWARDER']),
+            'ship_mode': self._map_ship_mode(row['SHIP\n MODE']),
             
             # 중량 및 부피
             'package_qty': self.clean_int(row['PKG']),
@@ -237,6 +237,51 @@ class HVDCDataMigrator:
             'vijay_tanks': self.clean_date(row['Vijay Tanks'])
         }
     
+    def _normalize_vendor(self, value: Any) -> str:
+        """
+        Vendor Name Standardization
+        - Uppercase, Trim
+        - Remove suffixes (LLC, FZE, CO WLL, etc.)
+        """
+        if pd.isna(value):
+            return None
+        
+        name = str(value).upper().strip()
+        
+        # Suffixes to remove
+        suffixes = [
+            ' LLC', ' FZE', ' FZCO', ' CO.', ' LTD', ' LIMITED', 
+            ' WLL', ' CO WLL', ' DMCC', ' INC', ' GMBH', ' S.P.A'
+        ]
+        
+        for suffix in suffixes:
+            if name.endswith(suffix):
+                name = name[:-len(suffix)].strip()
+                
+        # Remove punctuation
+        name = name.replace('.', '').replace(',', '')
+        return name.strip()
+
+    def _map_ship_mode(self, value: Any) -> str:
+        """
+        Ship Mode Mapping
+        A -> AIR
+        B -> SEA
+        C -> ROAD
+        """
+        if pd.isna(value):
+            return None
+            
+        code = str(value).upper().strip()
+        
+        mapping = {
+            'A': 'AIR',
+            'B': 'SEA',
+            'C': 'ROAD'
+        }
+        
+        return mapping.get(code, code) # Return original if not found (e.g. already 'AIR')
+
     def _determine_status(self, row: pd.Series) -> str:
         """
         행 데이터를 기반으로 선적 상태 결정
@@ -268,7 +313,10 @@ class HVDCDataMigrator:
                 logger.warning(f"Row {row_index}: No SCT SHIP NO, skipping")
                 return False
             
-            shipment_response = self.supabase.table('shipments').insert(shipment_data).execute()
+            # Upsert Shipment Data
+            shipment_response = self.supabase.table('shipments').upsert(
+                shipment_data, on_conflict='sct_ship_no'
+            ).execute()
             
             if not shipment_response.data:
                 raise Exception("Shipment insert failed")

@@ -60,11 +60,10 @@ sequenceDiagram
     Excel-->>Script: Return DataFrame
     
     loop For Each Row
-        Script->>Script: Clean Data & Map Types
-        Script->>DB: UPSERT Shipment (on sct_ship_no)
+        Script->>Script: Normalize Data (Vendor, Ship Mode)
+        Script->>DB: UPSERT Shipment (on conflict: sct_ship_no)
         
-        alt Shipment Exists
-            Script->>DB: DELETE Old Container/Warehouse Data
+        opt Data Changed
             Script->>DB: INSERT New Container Data
             Script->>DB: INSERT New Warehouse Data
         end

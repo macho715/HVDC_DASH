@@ -31,14 +31,14 @@ export default function MobileShipmentList() {
     setLoading(true)
     const params = new URLSearchParams()
     if (statusFilter) params.append('status', statusFilter)
-    
+
     const response = await fetch(`/api/shipments?${params}`)
     const result = await response.json()
     setShipments(result.data || [])
     setLoading(false)
   }
 
-  const filteredShipments = shipments.filter(s => 
+  const filteredShipments = shipments.filter(s =>
     s.sct_ship_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.vessel_name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -83,7 +83,7 @@ export default function MobileShipmentList() {
           <h1 className="text-xl font-bold text-gray-900 mb-3">
             🚢 HVDC Shipments
           </h1>
-          
+
           {/* Search Bar */}
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -148,9 +148,9 @@ export default function MobileShipmentList() {
             <p className="text-gray-400 text-sm mt-2">Try adjusting your filters</p>
           </div>
         ) : (
-          filteredShipments.map((shipment) => (
+          filteredShipments.map((shipment, index) => (
             <div
-              key={shipment.id}
+              key={`${shipment.id}-${index}`}
               className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden active:shadow-lg transition-shadow"
               onClick={() => window.location.href = `/shipments/${shipment.id}`}
             >
@@ -207,7 +207,7 @@ export default function MobileShipmentList() {
                       })}
                     </p>
                   </div>
-                  
+
                   {/* Containers */}
                   <div className="text-right">
                     <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Containers</p>
