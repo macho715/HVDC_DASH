@@ -13,10 +13,11 @@ A comprehensive dashboard for tracking and managing international shipments, con
 *   **Automated Data Migration**: Python scripts to seamlessly import and update data from Excel logistics reports.
 *   **Interactive Statistics**: Visualize data with charts for Vendor performance, Port volume, and Monthly trends.
 *   **Delay Alerts**: Automatic detection and alerting of delayed shipments based on ETA.
+*   **Mobile Optimization**: Fully responsive PWA design with touch-friendly UI for on-the-go access.
 
 ## 🛠 Tech Stack
 
-*   **Frontend**: Next.js 15 (App Router), TypeScript, Tailwind CSS
+*   **Frontend**: Next.js 15 (App Router), TypeScript, Tailwind CSS, PWA (Progressive Web App)
 *   **Backend / Database**: Supabase (PostgreSQL), PostgREST
 *   **Data Processing**: Python (Pandas) for ETL operations
 *   **Deployment**: Vercel (Frontend), GitHub (Source Control)

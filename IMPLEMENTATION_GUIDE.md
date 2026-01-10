@@ -40,6 +40,7 @@ shipments (선적 마스터)
 - ✅ 실시간 통계 함수
 - ✅ Row Level Security (RLS)
 - ✅ 파일 업로드 지원 (Supabase Storage)
+- ✅ 모바일 최적화 및 PWA 지원
 
 ---
 
@@ -646,7 +647,7 @@ async function uploadDocument(
 1. ✅ Supabase Auth 통합 (팀원별 권한 관리)
 2. ✅ PDF 송장 OCR 처리 자동화
 3. ✅ 이메일 알림 (지연 선적, 통관 완료 등)
-4. ✅ 모바일 앱 연동
+4. ✅ 모바일 앱 연동 (PWA 완료)
 5. ✅ Excel 직접 다운로드 기능
 
 ---

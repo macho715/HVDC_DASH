@@ -7,7 +7,7 @@ The **HVDC Logistics Dashboard** is a web-based platform designed to visualize a
 
 ## 2. High-Level Architecture
 The system follows a modern **Jamstack** architecture:
-*   **Frontend**: Next.js 15 (Server Side Rendering + Client Components).
+*   **Frontend**: Next.js 15 (Server Side Rendering + Client Components) + PWA Support.
 *   **Backend**: Serverless API Routes (Next.js) acting as a gateway to Supabase.
 *   **Database**: Supabase (PostgreSQL) with PostgREST APIs.
 *   **ETL Pipeline**: Python scripts for data cleaning and migration.
