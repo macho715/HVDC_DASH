@@ -69,15 +69,14 @@ If you need to refresh the database from Excel:
     ```
 
 ### 4. Start the Application
-Due to common port conflicts, we use **Port 3005**.
+Due to common port conflicts, we use **Port 3001**.
 
 ```bash
 cd hvdc-dashboard
-npx next dev -p 3005 --webpack
+npm run dev
 ```
 
-*   **Dashboard**: [http://localhost:3005](http://localhost:3005)
-*   **Note**: The `--webpack` flag is currently required for stability.
+*   **Dashboard**: [http://localhost:3001](http://localhost:3001)
 
 ---
 

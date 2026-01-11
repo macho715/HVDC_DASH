@@ -58,11 +58,28 @@ export function getDubaiToday(): string {
 /**
  * Asia/Dubai 시간대 기준으로 지정된 일수 후의 날짜를 YYYY-MM-DD 형식으로 반환
  * @param days 추가할 일수 (기본값: 0, 오늘)
+ *
+ * 시간대 인식 날짜 산술: Asia/Dubai 시간대에서 오늘 날짜를 가져온 후,
+ * 날짜 컴포넌트(year, month, day)에 직접 일수를 추가하여 월/년 경계를 처리합니다.
  */
 export function getDubaiDateAfterDays(days: number = 0): string {
-    const now = new Date();
-    const targetDate = new Date(now);
-    targetDate.setDate(targetDate.getDate() + days);
+    if (days === 0) {
+        return getDubaiToday();
+    }
+
+    // 1. Asia/Dubai 시간대에서 오늘 날짜 문자열 가져오기 (YYYY-MM-DD)
+    const todayStr = getDubaiToday();
+    const [year, month, day] = todayStr.split("-").map(Number);
+
+    // 2. Asia/Dubai 시간대 기준으로 날짜 객체 생성 (UTC+4)
+    // Asia/Dubai는 항상 UTC+4 (DST 없음)이므로 명시적으로 지정
+    const dubaiDate = new Date(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T00:00:00+04:00`);
+
+    // 3. 일수 추가: Date 객체에 직접 밀리초 단위로 추가하면
+    // 내부적으로 UTC로 변환 후 더하고, 포맷팅 시 Asia/Dubai로 변환됨
+    const targetDate = new Date(dubaiDate.getTime() + days * 24 * 60 * 60 * 1000);
+
+    // 4. Asia/Dubai 시간대로 다시 포맷팅 (Date 객체의 UTC 타임스탬프를 Asia/Dubai 시간대로 해석)
     const formatter = new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Dubai",
         year: "numeric",
