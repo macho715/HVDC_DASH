@@ -4,12 +4,12 @@ import { NextResponse } from 'next/server'
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 if (!supabaseUrl) {
-    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL for Supabase API client.')
+  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL for Supabase API client.')
 }
 
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 if (!supabaseKey) {
-    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY for Supabase API client.')
+  throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY for Supabase API client.')
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey)
