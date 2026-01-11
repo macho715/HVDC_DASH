@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
 import { useDashboardStore } from "@/store/dashboardStore";
-import type { WorklistRow, Gate } from "@/types/worklist";
+import type { Gate } from "@/types/worklist";
+import { useMemo } from "react";
 
 function gateClass(g: Gate) {
     if (g === "ZERO") return "bg-black text-white";
@@ -23,7 +23,8 @@ export function WorklistTable() {
 
     const visible = useMemo(() => {
         const q = (filters.q ?? "").toLowerCase().trim();
-        const today = "2026-01-10"; // 가정: UI 표시 기준(운영에서는 서버/클라이언트 now로 교체)
+        // 동적으로 오늘 날짜 계산 (YYYY-MM-DD 형식)
+        const today = new Date().toISOString().split("T")[0];
 
         const filtered = rows.filter((r) => {
             if (filters.gate && filters.gate !== "ALL" && r.gate !== filters.gate) return false;
@@ -31,10 +32,19 @@ export function WorklistTable() {
             if (filters.owner && filters.owner !== "ALL" && (r.owner ?? "") !== filters.owner) return false;
             if (q && !(r.title.toLowerCase().includes(q) || (r.subtitle ?? "").toLowerCase().includes(q))) return false;
 
+            // Due 필터 로직
             if (filters.due === "OVERDUE") {
                 if (!r.dueAt) return false;
                 if (r.dueAt >= today) return false;
+            } else if (filters.due === "DUE_7D") {
+                if (!r.dueAt) return false;
+                // 오늘부터 7일 후까지 (UTC 날짜 산술로 today와 일관성 유지)
+                const sevenDaysLater = new Date();
+                sevenDaysLater.setUTCDate(sevenDaysLater.getUTCDate() + 7);
+                const sevenDaysLaterStr = sevenDaysLater.toISOString().split("T")[0];
+                if (r.dueAt < today || r.dueAt > sevenDaysLaterStr) return false;
             }
+
             return true;
         });
 

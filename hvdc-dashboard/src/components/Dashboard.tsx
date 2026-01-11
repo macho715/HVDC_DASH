@@ -1,47 +1,46 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useDashboardStore } from "@/store/dashboardStore";
+import { useCallback, useEffect, useState } from "react";
+import { DetailDrawer } from "./dashboard/DetailDrawer";
 import { KpiStrip } from "./dashboard/KpiStrip";
 import { SavedViewsBar } from "./dashboard/SavedViewsBar";
-import { WorklistToolbar } from "./dashboard/WorklistToolbar";
 import { WorklistTable } from "./dashboard/WorklistTable";
-import { DetailDrawer } from "./dashboard/DetailDrawer";
+import { WorklistToolbar } from "./dashboard/WorklistToolbar";
 
 export default function Dashboard() {
     const applyPayload = useDashboardStore((s) => s.applyPayload);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // API에서 데이터 로드
-    useEffect(() => {
-        async function fetchWorklist() {
-            try {
-                setLoading(true);
-                setError(null);
+    // API에서 데이터 로드 (useCallback으로 메모이제이션)
+    const fetchWorklist = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
 
-                const response = await fetch("/api/worklist");
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const payload = await response.json();
-                applyPayload(payload);
-            } catch (err: any) {
-                console.error("Failed to fetch worklist:", err);
-                setError(err.message || "Failed to load data");
-                // Store에 Fallback 데이터 적용 (이미 API에서 Fallback 반환하지만 추가 안전장치)
-            } finally {
-                setLoading(false);
+            const response = await fetch("/api/worklist");
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        }
 
+            const payload = await response.json();
+            applyPayload(payload);
+        } catch (err: any) {
+            console.error("Failed to fetch worklist:", err);
+            setError(err.message || "Failed to load data");
+        } finally {
+            setLoading(false);
+        }
+    }, [applyPayload]);
+
+    useEffect(() => {
         fetchWorklist();
 
         // 주기적 갱신 (5분마다)
         const interval = setInterval(fetchWorklist, 5 * 60 * 1000);
         return () => clearInterval(interval);
-    }, [applyPayload]);
+    }, [fetchWorklist]);
 
     return (
         <div className="flex flex-col gap-4">

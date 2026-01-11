@@ -106,6 +106,7 @@ export function calculateGateAndTriggers(
     if (isEmpty(shipment.customs_start_date)) triggers.push("CUSTOMS_START_MISSING");
     if (isEmpty(shipment.delivery_date)) triggers.push("DELIVERY_DATE_MISSING");
     if (isEmpty(shipment.bl_awb_no)) triggers.push("BL_MISSING");
+    if (isEmpty(shipment.incoterms)) triggers.push("INCOTERM_MISSING");
 
     // Gate 결정 로직 (Python gate_and_triggers()와 정확히 동일)
     // Python 코드:
@@ -268,7 +269,8 @@ export function calculateKpis(
     }
 
     // Python: dri_avg = round(df.apply(dri_score, axis=1).mean(), 2)
-    const scores = shipments.map((r) => r.score ?? 0).filter((s) => s > 0);
+    // 모든 점수를 포함해야 함 (0점도 평균 계산에 포함)
+    const scores = shipments.map((r) => r.score ?? 0);
     const driAvg = scores.length > 0
         ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100
         : 0.0;
@@ -276,7 +278,7 @@ export function calculateKpis(
     // Python: red_count = sum(1 for x in rows if x["gate"] == "RED")
     const redCount = shipments.filter((r) => r.gate === "RED").length;
 
-    // Python: overdue_count = sum(1 for x in rows if x.get("dueAt") and x["dueAt"] < "2026-01-10")
+    // Python: overdue_count = sum(1 for x in rows if x.get("dueAt") and x["dueAt"] < today)
     const overdueCount = shipments.filter((r) => {
         if (!r.dueAt) return false;
         return r.dueAt < today;

@@ -6,13 +6,22 @@ export function KpiStrip() {
     const kpis = useDashboardStore((s) => s.kpis);
     const lastRefreshAt = useDashboardStore((s) => s.lastRefreshAt);
 
+    // 안전한 값 처리 (undefined 방지)
+    const safeKpis = {
+        driAvg: kpis?.driAvg ?? 0,
+        wsiAvg: kpis?.wsiAvg ?? 0,
+        redCount: kpis?.redCount ?? 0,
+        overdueCount: kpis?.overdueCount ?? 0,
+        recoverableAED: kpis?.recoverableAED ?? 0,
+    };
+
     return (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-            <Card k="DRI Avg" v={kpis.driAvg.toFixed(2)} />
-            <Card k="WSI Avg" v={kpis.wsiAvg.toFixed(2)} />
-            <Card k="Red Count" v={kpis.redCount.toFixed(0)} />
-            <Card k="Overdue" v={kpis.overdueCount.toFixed(0)} />
-            <Card k="Recoverable (AED)" v={kpis.recoverableAED.toFixed(2)} />
+            <Card k="DRI Avg" v={safeKpis.driAvg.toFixed(2)} />
+            <Card k="WSI Avg" v={safeKpis.wsiAvg.toFixed(2)} />
+            <Card k="Red Count" v={safeKpis.redCount.toFixed(0)} />
+            <Card k="Overdue" v={safeKpis.overdueCount.toFixed(0)} />
+            <Card k="Recoverable (AED)" v={safeKpis.recoverableAED.toFixed(2)} />
             <Card k="Last Refresh" v={lastRefreshAt ?? "-"} />
         </div>
     );

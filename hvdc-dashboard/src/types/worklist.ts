@@ -2,7 +2,6 @@ export type Gate = "GREEN" | "AMBER" | "RED" | "ZERO";
 export type RowKind = "SHIPMENT" | "WAREHOUSE" | "COST" | "EXCEPTION" | "ACTION";
 
 export type TriggerBadge =
-    | "DOC_MISSING"
     | "DO_MISSING"
     | "CUSTOMS_START_MISSING"
     | "DELIVERY_DATE_MISSING"
