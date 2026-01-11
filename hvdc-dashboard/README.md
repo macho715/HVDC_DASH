@@ -41,7 +41,7 @@ Run the standard development server:
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser.
+Open [http://localhost:3001](http://localhost:3001) with your browser.
 
 ### 📱 Mobile Development
 
@@ -52,7 +52,7 @@ To test on real mobile devices connected to the same Wi-Fi network:
 npm run dev:mobile
 ```
 
-Then access via your computer's IP address (e.g., `http://192.168.1.XX:3000`).
+Then access via your computer's IP address (e.g., `http://192.168.1.XX:3001`).
 
 ## 🛠 Project Structure
 
