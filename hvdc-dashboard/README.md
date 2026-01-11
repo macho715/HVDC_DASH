@@ -15,6 +15,17 @@ For detailed mobile instructions, see [MOBILE_GUIDE.md](./MOBILE_GUIDE.md).
 ### Prerequisites
 - Node.js 18+
 - Supabase Project Setup
+- Required environment variables (copy `.env.example` to `.env.local`):
+
+```bash
+cp .env.example .env.local
+```
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+```
 
 ### Installation
 
@@ -30,7 +41,7 @@ Run the standard development server:
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser.
+Open [http://localhost:3001](http://localhost:3001) with your browser.
 
 ### 📱 Mobile Development
 
@@ -41,7 +52,7 @@ To test on real mobile devices connected to the same Wi-Fi network:
 npm run dev:mobile
 ```
 
-Then access via your computer's IP address (e.g., `http://192.168.1.XX:3000`).
+Then access via your computer's IP address (e.g., `http://192.168.1.XX:3001`).
 
 ## 🛠 Project Structure
 
