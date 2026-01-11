@@ -299,8 +299,11 @@ export function calculateKpis(
     };
   }
 
-  const scores = shipments.map((r) => r.score ?? 0).filter((s) => s > 0);
-  const driAvg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0.0;
+  // 모든 점수를 포함해야 함 (0점도 평균 계산에 포함)
+  const scores = shipments.map((r) => r.score ?? 0);
+  const driAvg = scores.length > 0
+    ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100
+    : 0.0;
 
   const redCount = shipments.filter((r) => r.gate === "RED").length;
   const overdueCount = shipments.filter((r) => {

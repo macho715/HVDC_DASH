@@ -7,6 +7,7 @@
 import { supabaseAdmin as supabase } from "@/lib/supabase";
 import {
     calculateKpis,
+    getDubaiToday,
     shipmentToWorklistRow,
     type ShipmentRow,
 } from "@/lib/worklist-utils";
@@ -18,8 +19,8 @@ import { NextRequest, NextResponse } from "next/server";
  */
 function getDubaiTimestamp(): string {
     const now = new Date();
-    // Asia/Dubai 시간대로 변환 (UTC+4)
-    const dubaiTimeStr = now.toLocaleString("en-US", {
+    // Asia/Dubai 시간대로 변환
+    const formatter = new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Dubai",
         year: "numeric",
         month: "2-digit",
@@ -28,10 +29,16 @@ function getDubaiTimestamp(): string {
         minute: "2-digit",
         hour12: false,
     });
-    // "MM/DD/YYYY, HH:mm" 형식을 "YYYY-MM-DD HH:mm"로 변환
-    const [datePart, timePart] = dubaiTimeStr.split(", ");
-    const [month, day, year] = datePart.split("/");
-    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")} ${timePart}`;
+
+    // en-CA locale은 YYYY-MM-DD 형식을 사용하므로 더 안정적
+    const parts = formatter.formatToParts(now);
+    const year = parts.find((p) => p.type === "year")?.value;
+    const month = parts.find((p) => p.type === "month")?.value;
+    const day = parts.find((p) => p.type === "day")?.value;
+    const hour = parts.find((p) => p.type === "hour")?.value;
+    const minute = parts.find((p) => p.type === "minute")?.value;
+
+    return `${year}-${month}-${day} ${hour}:${minute}`;
 }
 
 /**
@@ -55,7 +62,8 @@ const getFallbackPayload = (): DashboardPayload => ({
  */
 export async function GET(request: NextRequest) {
     try {
-        const today = new Date().toISOString().split("T")[0];
+        // Asia/Dubai 시간대 기준 오늘 날짜 사용 (필터링 및 계산 일관성)
+        const today = getDubaiToday();
 
         // 1. Shipments 조회 (warehouse_inventory와 함께)
         const { data: shipments, error: shipmentsError } = await supabase
@@ -166,18 +174,8 @@ export async function GET(request: NextRequest) {
         const kpis = calculateKpis(worklistRows, today);
 
         // 4. Payload 구성
-        // lastRefreshAt을 Asia/Dubai 시간대로 변환 (YYYY-MM-DD HH:mm 형식)
-        const now = new Date();
-        const dubaiTime = new Date(
-            now.toLocaleString("en-US", { timeZone: "Asia/Dubai" })
-        );
-        const lastRefreshAt = dubaiTime
-            .toISOString()
-            .replace("T", " ")
-            .slice(0, 16);
-
         const payload: DashboardPayload = {
-            lastRefreshAt,
+            lastRefreshAt: getDubaiTimestamp(),
             kpis,
             rows: worklistRows,
         };

@@ -41,6 +41,38 @@ export interface ShipmentRow {
 }
 
 /**
+ * Asia/Dubai 시간대로 현재 날짜를 YYYY-MM-DD 형식으로 반환
+ * 모든 날짜 비교 및 필터링에서 일관성 있게 사용
+ */
+export function getDubaiToday(): string {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Dubai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    });
+    return formatter.format(now);
+}
+
+/**
+ * Asia/Dubai 시간대 기준으로 지정된 일수 후의 날짜를 YYYY-MM-DD 형식으로 반환
+ * @param days 추가할 일수 (기본값: 0, 오늘)
+ */
+export function getDubaiDateAfterDays(days: number = 0): string {
+    const now = new Date();
+    const targetDate = new Date(now);
+    targetDate.setDate(targetDate.getDate() + days);
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Dubai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    });
+    return formatter.format(targetDate);
+}
+
+/**
  * 날짜 문자열을 YYYY-MM-DD 형식으로 변환 (null-safe)
  * Python의 iso_date() 함수와 동일한 동작
  */
@@ -96,7 +128,7 @@ export function calculateDriScore(shipment: ShipmentRow): number {
  */
 export function calculateGateAndTriggers(
     shipment: ShipmentRow,
-    today: string = new Date().toISOString().split("T")[0]
+    today: string = getDubaiToday()
 ): { gate: Gate; triggers: TriggerBadge[] } {
     const triggers: TriggerBadge[] = [];
 
@@ -246,7 +278,7 @@ export function shipmentToWorklistRow(shipment: ShipmentRow, today?: string): Wo
  */
 export function calculateKpis(
     rows: WorklistRow[],
-    today: string = new Date().toISOString().split("T")[0]
+    today: string = getDubaiToday()
 ): {
     driAvg: number;
     wsiAvg: number;
