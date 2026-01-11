@@ -14,10 +14,31 @@ import type { DashboardPayload } from "@/types/worklist";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
+ * Asia/Dubai 시간대로 현재 시간을 YYYY-MM-DD HH:mm 형식으로 변환
+ */
+function getDubaiTimestamp(): string {
+    const now = new Date();
+    // Asia/Dubai 시간대로 변환 (UTC+4)
+    const dubaiTimeStr = now.toLocaleString("en-US", {
+        timeZone: "Asia/Dubai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+    });
+    // "MM/DD/YYYY, HH:mm" 형식을 "YYYY-MM-DD HH:mm"로 변환
+    const [datePart, timePart] = dubaiTimeStr.split(", ");
+    const [month, day, year] = datePart.split("/");
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")} ${timePart}`;
+}
+
+/**
  * Fallback Demo 데이터 (API 실패 시 사용)
  */
 const getFallbackPayload = (): DashboardPayload => ({
-    lastRefreshAt: new Date().toISOString().replace("T", " ").slice(0, 16),
+    lastRefreshAt: getDubaiTimestamp(),
     kpis: {
         driAvg: 0.0,
         wsiAvg: 0.0,
@@ -145,11 +166,18 @@ export async function GET(request: NextRequest) {
         const kpis = calculateKpis(worklistRows, today);
 
         // 4. Payload 구성
+        // lastRefreshAt을 Asia/Dubai 시간대로 변환 (YYYY-MM-DD HH:mm 형식)
+        const now = new Date();
+        const dubaiTime = new Date(
+            now.toLocaleString("en-US", { timeZone: "Asia/Dubai" })
+        );
+        const lastRefreshAt = dubaiTime
+            .toISOString()
+            .replace("T", " ")
+            .slice(0, 16);
+
         const payload: DashboardPayload = {
-            lastRefreshAt: new Date()
-                .toISOString()
-                .replace("T", " ")
-                .slice(0, 16),
+            lastRefreshAt,
             kpis,
             rows: worklistRows,
         };
