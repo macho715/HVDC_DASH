@@ -220,6 +220,8 @@ SELECT * FROM v_shipment_overview LIMIT 5;
 your-project/
 ├── app/
 │   ├── api/
+│   │   ├── worklist/
+│   │   │   └── route.ts              # GET - Dashboard worklist data
 │   │   ├── shipments/
 │   │   │   ├── route.ts              # GET, POST
 │   │   │   └── [id]/
@@ -230,7 +232,8 @@ your-project/
 │   │       └── route.ts              # POST (Excel upload)
 │   └── ...
 ├── lib/
-│   └── supabase.ts                   # Supabase 클라이언트
+│   ├── supabase.ts                   # Supabase 클라이언트
+│   └── worklist-utils.ts             # Worklist 변환 및 KPI 계산 유틸리티
 └── ...
 ```
 
@@ -263,6 +266,48 @@ npm install @supabase/supabase-js
 - `api_shipments_route.ts` → `app/api/shipments/route.ts`
 - `api_shipments_id_route.ts` → `app/api/shipments/[id]/route.ts`
 - `api_statistics_route.ts` → `app/api/statistics/route.ts`
+
+### 4단계: Worklist API 구현
+
+Dashboard용 통합 API 엔드포인트:
+
+```typescript
+// app/api/worklist/route.ts
+import { supabaseAdmin as supabase } from "@/lib/supabase";
+import { calculateKpis, getDubaiToday, shipmentToWorklistRow } from "@/lib/worklist-utils";
+
+export async function GET(request: NextRequest) {
+  // 1. Supabase에서 shipments 조회 (warehouse_inventory 포함)
+  const { data: shipments } = await supabase
+    .from("shipments")
+    .select(`
+      *,
+      warehouse_inventory (*)
+    `)
+    .order("eta", { ascending: false, nullsLast: true });
+
+  // 2. ShipmentRow[] → WorklistRow[] 변환
+  const today = getDubaiToday();
+  const worklistRows = shipments.map(s => 
+    shipmentToWorklistRow(s, today)
+  );
+
+  // 3. KPI 계산
+  const kpis = calculateKpis(worklistRows, today);
+
+  // 4. Payload 반환
+  return NextResponse.json({
+    lastRefreshAt: getDubaiTimestamp(),
+    kpis,
+    rows: worklistRows
+  });
+}
+```
+
+**주요 기능**:
+- Asia/Dubai 시간대 기준 날짜 처리
+- KPI 자동 계산 (DRI Avg, Red Count, Overdue 등)
+- Fallback 데이터 제공으로 에러 시 UI 안정성 확보
 
 ---
 
@@ -410,94 +455,101 @@ export default function ShipmentList() {
 }
 ```
 
-### 대시보드 컴포넌트
+### 대시보드 컴포넌트 (Worklist API 통합)
 
 ```typescript
 // components/Dashboard.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useDashboardStore } from '@/store/dashboardStore'
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<any>(null)
-  
+  const applyPayload = useDashboardStore((s) => s.applyPayload)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // API에서 데이터 로드
+  const fetchWorklist = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await fetch("/api/worklist")
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const payload = await response.json()
+      applyPayload(payload)
+    } catch (err: any) {
+      console.error("Failed to fetch worklist:", err)
+      setError(err.message || "Failed to load data")
+    } finally {
+      setLoading(false)
+    }
+  }, [applyPayload])
+
   useEffect(() => {
-    fetch('/api/statistics')
-      .then(res => res.json())
-      .then(data => setStats(data))
-  }, [])
-  
-  if (!stats) return <div>Loading...</div>
-  
+    fetchWorklist()
+    // 5분마다 자동 갱신
+    const interval = setInterval(fetchWorklist, 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [fetchWorklist])
+
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">HVDC 물류 대시보드</h1>
-      
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="text-gray-500 text-sm">전체 선적</div>
-          <div className="text-3xl font-bold">{stats.overview.total_shipments}</div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="text-gray-500 text-sm">운송중</div>
-          <div className="text-3xl font-bold text-blue-600">
-            {stats.overview.in_transit_shipments}
-          </div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="text-gray-500 text-sm">총 컨테이너</div>
-          <div className="text-3xl font-bold">{stats.overview.total_containers}</div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="text-gray-500 text-sm">총 중량 (톤)</div>
-          <div className="text-3xl font-bold">
-            {(stats.overview.total_weight_kg / 1000).toFixed(1)}
-          </div>
-        </div>
-      </div>
-      
-      {/* 지연 선적 알림 */}
-      {stats.delayed_shipments.length > 0 && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-8">
-          <h3 className="text-lg font-bold text-red-800 mb-2">
-            ⚠️ 지연 선적: {stats.delayed_shipments.length}건
-          </h3>
-          <ul className="list-disc list-inside">
-            {stats.delayed_shipments.slice(0, 5).map((s: any) => (
-              <li key={s.sct_ship_no} className="text-red-700">
-                {s.sct_ship_no} - {s.vessel_name} ({s.days_delayed}일 지연)
-              </li>
-            ))}
-          </ul>
+    <div className="flex flex-col gap-4">
+      {loading && (
+        <div className="rounded-lg border bg-white p-4 text-center text-sm text-slate-500">
+          Loading worklist data...
         </div>
       )}
-      
-      {/* 상태별 분포 */}
-      <div className="bg-white p-6 rounded-lg shadow mb-8">
-        <h2 className="text-xl font-bold mb-4">상태별 분포</h2>
-        <div className="flex gap-4">
-          {Object.entries(stats.status_breakdown).map(([status, count]) => (
-            <div key={status} className="flex-1 text-center">
-              <div className="text-2xl font-bold">{count as number}</div>
-              <div className="text-gray-500 text-sm">{status}</div>
-            </div>
-          ))}
+
+      {error && (
+        <div className="rounded-lg border border-amber-500 bg-amber-50 p-4 text-sm text-amber-800">
+          ⚠️ Error: {error} (Using fallback data)
         </div>
-      </div>
+      )}
+
+      <KpiStrip />
+      {/* Worklist Table, Detail Drawer 등 */}
     </div>
   )
 }
 ```
 
+**주요 기능**:
+- `/api/worklist` 엔드포인트에서 데이터 로드
+- 로딩 상태 및 에러 처리
+- 5분마다 자동 갱신
+- Zustand store를 통한 상태 관리
+
 ---
 
 ## 실전 사용 예시
 
-### 1. 선적 정보 조회
+### 1. Dashboard Worklist 조회
+
+```bash
+# Dashboard용 통합 데이터 조회 (KPI + Worklist Rows)
+curl https://your-project.vercel.app/api/worklist
+
+# 응답 예시:
+# {
+#   "lastRefreshAt": "2026-01-15 14:30",
+#   "kpis": {
+#     "driAvg": 85.5,
+#     "wsiAvg": 0.0,
+#     "redCount": 3,
+#     "overdueCount": 5,
+#     "recoverableAED": 125000.50,
+#     "zeroStops": 0
+#   },
+#   "rows": [...]
+# }
+```
+
+### 2. 선적 정보 조회
 
 ```bash
 # 전체 선적 조회
@@ -513,19 +565,19 @@ curl "https://your-project.vercel.app/api/shipments?from_date=2024-01-01&to_date
 curl "https://your-project.vercel.app/api/shipments?status=in_transit"
 ```
 
-### 2. 개별 선적 상세 조회
+### 3. 개별 선적 상세 조회
 
 ```bash
 curl https://your-project.vercel.app/api/shipments/[shipment-id]
 ```
 
-### 3. 통계 조회
+### 4. 통계 조회
 
 ```bash
 curl https://your-project.vercel.app/api/statistics
 ```
 
-### 4. 선적 정보 수정
+### 5. 선적 정보 수정
 
 ```bash
 curl -X PUT https://your-project.vercel.app/api/shipments/[id] \
@@ -536,7 +588,7 @@ curl -X PUT https://your-project.vercel.app/api/shipments/[id] \
   }'
 ```
 
-### 5. Excel 대량 업로드 (프론트엔드)
+### 6. Excel 대량 업로드 (프론트엔드)
 
 ```typescript
 async function uploadExcel(file: File) {

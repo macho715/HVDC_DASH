@@ -156,8 +156,81 @@ export default function ShipmentsPage() {
 
 ---
 
+---
+
+## 6. Worklist API 구현 및 Dashboard 통합
+
+### 작업 내용
+
+#### 6.1 `/api/worklist` 엔드포인트 구현
+- Dashboard용 통합 데이터 API 엔드포인트 생성
+- Supabase에서 shipments 데이터 조회 및 변환
+- KPI 계산 로직 통합
+- Asia/Dubai 시간대 일관성 확보
+
+#### 6.2 `worklist-utils.ts` 유틸리티 함수 구현
+- `shipmentToWorklistRow()`: DB shipment 데이터를 WorklistRow 형식으로 변환
+- `calculateKpis()`: DRI Avg, WSI Avg, Red Count, Overdue Count, Recoverable AED 계산
+- `getDubaiToday()`: Asia/Dubai 시간대 기준 오늘 날짜 반환
+- `getDubaiDateAfterDays()`: Asia/Dubai 시간대 기준 N일 후 날짜 계산
+- Python 구현과 100% 일치하는 계산 로직 보장
+
+#### 6.3 Dashboard 컴포넌트 API 통합
+- Mock 데이터 대신 `/api/worklist` 엔드포인트 사용
+- 로딩 상태 및 에러 처리 추가
+- 5분마다 자동 갱신 기능 구현
+- Fallback 데이터 제공으로 UI 안정성 확보
+
+#### 6.4 Asia/Dubai 시간대 처리
+- 모든 날짜 비교 로직에 Asia/Dubai 시간대 적용
+- API와 UI 간 날짜 기준 일관성 유지
+- `getDubaiToday()` 함수로 중앙화된 날짜 관리
+
+### 변경 파일
+- `hvdc-dashboard/src/app/api/worklist/route.ts` (신규 생성)
+- `hvdc-dashboard/src/lib/worklist-utils.ts` (신규 생성)
+- `hvdc-dashboard/src/components/Dashboard.tsx` (API 통합)
+- `hvdc-dashboard/src/components/dashboard/WorklistTable.tsx` (Asia/Dubai 시간대 적용)
+- `hvdc-dashboard/src/components/dashboard/KpiStrip.tsx` (안전한 값 처리)
+
+### 구현 상세
+
+#### API 엔드포인트 구조
+```typescript
+GET /api/worklist
+Response: {
+  lastRefreshAt: "2026-01-15 14:30",
+  kpis: {
+    driAvg: 85.5,
+    wsiAvg: 0.0,
+    redCount: 3,
+    overdueCount: 5,
+    recoverableAED: 125000.50,
+    zeroStops: 0
+  },
+  rows: WorklistRow[]
+}
+```
+
+#### KPI 계산 로직
+- **DRI Avg**: 모든 shipment의 DRI 점수 평균
+- **WSI Avg**: 현재 0.0 (구현 예정)
+- **Red Count**: Gate가 "RED"인 shipment 수
+- **Overdue Count**: Due Date가 오늘보다 이전인 shipment 수
+- **Recoverable AED**: Duty + VAT 합계
+
+### 효과
+- Dashboard가 실시간 DB 데이터를 표시
+- API와 UI 간 날짜 기준 일관성 확보
+- KPI 자동 계산으로 수동 작업 감소
+- 에러 발생 시에도 UI 안정성 유지
+
+---
+
 ## 다음 작업 제안
 
 - [ ] 다른 API 라우트에도 환경 변수 검증 패턴 적용 확인
 - [ ] 환경 변수 검증을 위한 공통 유틸리티 함수 고려
 - [ ] 테스트 코드 작성 (환경 변수 검증 로직)
+- [ ] WSI Avg 계산 로직 구현
+- [ ] Zero Stops 계산 로직 구현

@@ -4,7 +4,7 @@
 
 The **HVDC Logistics Dashboard** is a mission-critical "Control Tower" application designed for Samsung C&T's HVDC Lightning Project. It provides real-time visibility into international logistics, integrating data from ERP systems (Excel exports) into a centralized, interactive web interface.
 
-The system is built on a **Jamstack** architecture, leveraging **Next.js 15** for a responsive frontend, **Supabase** for a scalable serverless backend/database, and **Python** for robust data processing pipelines.
+The system is built on a **Jamstack** architecture, leveraging **Next.js 16** for a responsive frontend, **Supabase** for a scalable serverless backend/database, and **Python** for robust data processing pipelines.
 
 ---
 
@@ -32,7 +32,7 @@ graph LR
     end
 
     subgraph Frontend Application
-        NextJS[Next.js 15 App]
+        NextJS[Next.js 16 App]
         Zustand[Zustand Store]
         UI[Modern Dashboard UI]
     end
@@ -55,11 +55,12 @@ graph LR
 
 | Layer | Technology | Description |
 | :--- | :--- | :--- |
-| **Frontend Framework** | **Next.js 15** | App Router, Server Components, React 19. |
+| **Frontend Framework** | **Next.js 16** | App Router, Server Components, React 19. |
 | **Language** | **TypeScript** | Strict type safety for all components and stores. |
 | **Styling** | **Tailwind CSS 4** | Utility-first CSS, configured for dark/light modes. |
 | **State Management** | **Zustand** | Lightweight client-side state (Filters, Selection). |
 | **Backend & DB** | **Supabase** | PostgreSQL 15, Auto-generated APIs, RLS Security. |
+| **API Routes** | **Next.js API** | `/api/worklist` for dashboard data aggregation. |
 | **Map Engine** | **Leaflet / SVG** | Hybrid approach for global route visualization. |
 | **ETL & Migration** | **Python 3.10+** | Pandas for data cleaning, normalization, and upsert logic. |
 
@@ -82,6 +83,7 @@ graph TD
     
     MainArea --> DashboardPage[Dashboard.tsx]
     
+    DashboardPage --> API[API: /api/worklist]
     DashboardPage --> KPI[KpiStrip.tsx]
     
     DashboardPage --> ContentSplit[Grid Layout]
@@ -93,6 +95,9 @@ graph TD
     WorklistSection --> Table[WorklistTable.tsx]
     
     DetailSection --> Tabs[Overview / Timeline / Docs]
+    
+    API --> Utils[worklist-utils.ts]
+    Utils --> SupabaseDB[(Supabase DB)]
 ```
 
 ### 4.2 State Management (Zustand Store)
@@ -190,9 +195,47 @@ sequenceDiagram
 
 ---
 
-## 7. Deployment Strategy
+## 7. API Architecture
 
-*   **Development**: Local Node.js server (Port `3005`) proxying to remote Supabase.
+### 7.1 Worklist API Endpoint
+
+The `/api/worklist` endpoint provides aggregated dashboard data:
+
+```typescript
+GET /api/worklist
+Response: {
+  lastRefreshAt: string,  // Asia/Dubai timezone timestamp
+  kpis: {
+    driAvg: number,
+    wsiAvg: number,
+    redCount: number,
+    overdueCount: number,
+    recoverableAED: number,
+    zeroStops: number
+  },
+  rows: WorklistRow[]
+}
+```
+
+**Key Features**:
+- Fetches shipments from Supabase with warehouse inventory join
+- Converts DB rows to WorklistRow format using `worklist-utils.ts`
+- Calculates KPIs using `calculateKpis()` function
+- Uses Asia/Dubai timezone for all date comparisons
+- Provides fallback data on errors to ensure UI stability
+
+### 7.2 Timezone Handling
+
+All date operations use **Asia/Dubai** timezone for consistency:
+- `getDubaiToday()`: Returns today's date in YYYY-MM-DD format
+- `getDubaiTimestamp()`: Returns current timestamp in YYYY-MM-DD HH:mm format
+- Date comparisons in filters and KPI calculations use Dubai timezone
+
+---
+
+## 8. Deployment Strategy
+
+*   **Development**: Local Node.js server (Port `3001`) proxying to remote Supabase.
 *   **Production** (Planned):
     *   **Frontend**: Vercel (recommended for Next.js) or Docker Container on AWS ECS.
     *   **Database**: Managed Supabase instance (Cloud).
