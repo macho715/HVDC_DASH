@@ -15,39 +15,39 @@ if (!supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params
+    try {
+        const { id } = await params
 
-    // Fetch shipment with all related data
-    const { data: shipment, error } = await supabase
-      .from('shipments')
-      .select(`
+        // Fetch shipment with all related data
+        const { data: shipment, error } = await supabase
+            .from('shipments')
+            .select(`
         *,
         container_details (*),
         warehouse_inventory (*),
         financial_transactions (*)
       `)
-      .eq('id', id)
-      .single()
+            .eq('id', id)
+            .single()
 
-    if (error) {
-      console.error('Supabase error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+        if (error) {
+            console.error('Supabase error:', error)
+            return NextResponse.json({ error: error.message }, { status: 500 })
+        }
+
+        if (!shipment) {
+            return NextResponse.json({ error: 'Shipment not found' }, { status: 404 })
+        }
+
+        return NextResponse.json({ data: shipment })
+    } catch (error) {
+        console.error('Internal server error:', error)
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        )
     }
-
-    if (!shipment) {
-      return NextResponse.json({ error: 'Shipment not found' }, { status: 404 })
-    }
-
-    return NextResponse.json({ data: shipment })
-  } catch (error) {
-    console.error('Internal server error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
 }
