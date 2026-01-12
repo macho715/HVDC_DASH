@@ -190,6 +190,41 @@ sequenceDiagram
 
 ---
 
+## Stage 4 – Flow diagrams, recovery paths & metrics
+
+### Offline conflict behavior
+
+**Conflict detection**
+*   Each offline edit stores a local `version` or `updated_at` timestamp and is sent with the next sync.
+*   The server compares the client value against the latest record. A mismatch (server newer than client) flags a conflict.
+*   Conflicts are classified per-field so non-overlapping changes can be auto-merged.
+
+**Resolution strategy**
+*   **Default**: last-write-wins for non-critical fields (labels, notes) after recording a conflict audit entry.
+*   **Prompted**: user confirmation required when critical fields diverge (ETA/ETD, customs milestones, delivery dates).
+*   **Merge helper**: show diff highlighting for conflicting fields and keep the user’s draft as a recoverable version.
+
+**UI copy (conflict prompts)**
+*   **Title**: “Changes detected while you were offline.”
+*   **Body**: “This shipment was updated by another source. Review the latest values and choose which version to keep.”
+*   **Primary action**: “Keep Latest (Server)”
+*   **Secondary action**: “Keep My Changes”
+*   **Tertiary action**: “Review Differences”
+*   **Follow-up toast**: “Conflict resolved and saved.”
+
+**Metrics**
+*   **Conflict resolution success rate** = resolved conflicts ÷ total detected conflicts.
+*   Track: time-to-resolution, % of conflicts requiring prompts, and rollback usage.
+
+**Expected user path**
+1. Offline user edits a shipment record.
+2. On reconnect, sync sends the edit with `version`/`updated_at`.
+3. If conflict detected, the conflict modal appears with field-level diff.
+4. User selects “Keep Latest,” “Keep My Changes,” or “Review Differences.”
+5. Resolution is persisted, audit logged, and the record refreshes in the UI.
+
+---
+
 ## 7. Deployment Strategy
 
 *   **Development**: Local Node.js server (Port `3005`) proxying to remote Supabase.
