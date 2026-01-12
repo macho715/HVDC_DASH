@@ -40,3 +40,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# temporary development files
+Untitled-*.md
+Untitled-*.txt
+Untitled-*.ts
+Untitled-*.tsx
+plan_fix.md
